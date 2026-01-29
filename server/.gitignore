@@ -1,0 +1,21 @@
+# ===== Node =====
+node_modules/
+
+# ===== Environment =====
+.env
+.env.*
+
+# ===== Build =====
+dist/
+build/
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== Runtime =====
+uploads/
+tmp/
+
+# ===== Prisma (if used) =====
+prisma/dev.db
