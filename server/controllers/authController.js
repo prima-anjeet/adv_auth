@@ -1,14 +1,18 @@
 import TryCatch from "../middlewares/TryCatch.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import sanitize from "mongo-sanitize";
-import { registerSchema,loginSchema} from "../config/zod.js";
+import { registerSchema, loginSchema } from "../config/zod.js";
 import { redisClient } from "../index.js";
 import crypto from "crypto";
 import sendEmail from "../config/sendMail.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateToken } from "../config/generateToken.js";
+import {
+  clearTokens,
+  generateAccessToken,
+  generateToken,
+  verifyRefreshToken,
+} from "../config/generateToken.js";
 const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
   // Validate input using Zod schema
@@ -65,11 +69,10 @@ const registerUser = TryCatch(async (req, res) => {
   }
 
   return res.json({
-    message:
-      "Please verify your email to activate your account.",
+    message: "Please verify your email to activate your account.",
   });
 });
- 
+
 const verifyUser = TryCatch(async (req, res) => {
   const { token } = req.params;
   const verifyKey = `verify_token:${token}`;
@@ -90,7 +93,7 @@ const verifyUser = TryCatch(async (req, res) => {
 
   const { username, email, password } = JSON.parse(userData);
 
-   // Check if user already exists
+  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).json({
@@ -122,7 +125,7 @@ const loginUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
   // Validate input using Zod schema
   const parseResult = loginSchema.safeParse(sanitizedBody);
-  
+
   if (!parseResult.success) {
     const zodErrors = parseResult.error.flatten().fieldErrors;
     return res.status(400).json({
@@ -134,7 +137,7 @@ const loginUser = TryCatch(async (req, res) => {
 
   const { email, password } = parseResult.data;
 
- const ratelimitKey = `login_rate_limit:${req.ip}:${email}`;
+  const ratelimitKey = `login_rate_limit:${req.ip}:${email}`;
 
   if (await redisClient.get(ratelimitKey)) {
     return res.status(429).json({
@@ -157,34 +160,34 @@ const loginUser = TryCatch(async (req, res) => {
       message: "Invalid email or password.",
     });
   }
-  
-  const otp= Math.floor(100000 + Math.random() * 900000).toString();
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   const otpKey = `otp:${email}`;
   await redisClient.set(otpKey, otp, { EX: 300 }); // Expires in 5 minutes
 
   const subject = "Your Login OTP";
-  const html = getOtpHtml({ email, otp }); 
-  
+  const html = getOtpHtml({ email, otp });
+
   // Send OTP email (note: helper expects positional args)
   await sendEmail(email, subject, html);
 
   // Set rate limit key with expiration of 60 seconds
   await redisClient.set(ratelimitKey, "true", { EX: 60 });
 
- res.json({
+  res.json({
     success: true,
     message: "OTP sent to your email. Please verify to complete login.",
   });
 });
-  
+
 const verifyOtp = TryCatch(async (req, res) => {
   const { email, otp } = req.body;
-  if(!email||!otp){
+  if (!email || !otp) {
     return res.status(400).json({
       success: false,
       message: "Email and OTP are required.",
-    }); 
+    });
   }
   const otpKey = `otp:${email}`;
   const storedOtpString = await redisClient.get(otpKey);
@@ -204,12 +207,12 @@ const verifyOtp = TryCatch(async (req, res) => {
       success: false,
       message: "Invalid OTP.",
     });
-  } 
+  }
 
   await redisClient.del(otpKey);
 
   const user = await User.findOne({ email });
-  const tokenData=await generateToken(user._id,res);
+  const tokenData = await generateToken(user._id, res);
 
   return res.json({
     success: true,
@@ -217,4 +220,61 @@ const verifyOtp = TryCatch(async (req, res) => {
     user,
   });
 });
-export { registerUser, verifyUser, loginUser, verifyOtp };
+
+const myProfile = TryCatch(async (req, res) => {
+  const myuser = req.user;
+  return res.json({
+    success: true,
+    user: myuser,
+  });
+});
+
+const refreshToken = TryCatch(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    return res
+      .status(403)
+      .json({ success: false, message: "Please login first, no token" });
+  }
+  const decoded = await verifyRefreshToken(refreshToken);
+  if (!decoded) {
+    return res.status(400).json({
+      message: "Invalid or expired refresh token",
+    });
+  }
+
+  const accessToken = generateAccessToken(decoded.id);
+
+  // Set new access token cookie so isAuth can read it
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    sameSite: "strict",
+    maxAge: 2 * 60 * 1000, // 2 minutes
+  });
+
+  return res.status(200).json({
+    message: "Access token generated successfully",
+    accessToken,
+  });
+});
+
+const logoutUser = TryCatch(async (req, res) => {
+  const userId = req.user._id;
+  await clearTokens(userId, res);
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  await redisClient.del(`user:${userId}`);
+  return res.json({
+    success: true,
+    message: "Logged out successfully.",
+  });
+});
+export {
+  registerUser,
+  verifyUser,
+  loginUser,
+  verifyOtp,
+  myProfile,
+  refreshToken,
+  logoutUser,
+};
