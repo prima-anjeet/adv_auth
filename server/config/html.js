@@ -5,7 +5,7 @@ export const getOtpHtml = ({ email, otp }) => {
     <meta charset="UTF-8" /> 
     <meta name="viewport" content="width=device-width,initial-scale=1" /> 
     <meta name="x-apple-disable-message-reformatting" /> 
-    <title>{{APP_NAME}} Verification Code</title> 
+    <title>Verification Code</title> 
     <style> 
       /* Base reset */ 
       html, body { 
@@ -17,8 +17,7 @@ export const getOtpHtml = ({ email, otp }) => {
         color: #111; 
         -webkit-text-size-adjust: 100%; 
         -ms-text-size-adjust: 100%; 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color 
-Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif; 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif; 
       } 
       table { 
         border-collapse: collapse; 
@@ -197,7 +196,7 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
 };
 
 export const getVerifyEmailHtml = ({ email, token }) => {
-  const appName = process.env.APP_NAME || "Authentication App";
+  const appName = "Auth App";
   const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
   const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/token/${encodeURIComponent(
@@ -213,16 +212,20 @@ export const getVerifyEmailHtml = ({ email, token }) => {
     <title>${appName} Verify Your Account</title> 
     <style> 
       /* Base reset */ 
-      html, body { margin: 0; padding: 0; } 
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+      } 
       body { 
         background: #f6f7fb; 
         color: #111; 
         -webkit-text-size-adjust: 100%; 
         -ms-text-size-adjust: 100%; 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color 
-Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif; 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif; 
       } 
-      table { border-collapse: collapse; } 
+      table { 
+        border-collapse: collapse; 
+      } 
       img { 
         border: 0; 
         line-height: 100%; 
@@ -234,7 +237,10 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
       } 
  
       /* Layout */ 
-      .wrapper { width: 100%; background: #f6f7fb; } 
+      .wrapper { 
+        width: 100%; 
+        background: #f6f7fb; 
+      } 
       .container { 
         width: 600px; 
         max-width: 600px; 
@@ -243,8 +249,12 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
         overflow: hidden; 
         border: 1px solid #e9ecf3; 
       } 
-      .p-24 { padding: 24px; } 
-      .p-32 { padding: 32px; } 
+      .p-24 { 
+        padding: 24px; 
+      } 
+      .p-32 { 
+        padding: 32px; 
+      } 
       .header { 
         background: #111827; 
         padding: 18px 24px; 
@@ -266,7 +276,7 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
         font-weight: 700; 
       } 
       .text { 
-        margin: 0 16px 16px 0; 
+        margin: 0 0 16px 0; 
         font-size: 15px; 
         line-height: 1.6; 
         color: #444; 
@@ -298,18 +308,20 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
         line-height: 1.6; 
         padding: 16px 24px 0 24px; 
       } 
- 
-      /* Link fallback */ 
       .link { 
         color: #111827; 
         text-decoration: underline; 
         word-break: break-all; 
-      } 
+      }
  
       /* Responsive */ 
       @media only screen and (max-width: 600px) { 
-        .container { width: 100% !important; } 
-        .p-32 { padding: 24px !important; } 
+        .container { 
+          width: 100% !important; 
+        } 
+        .p-32 { 
+          padding: 24px !important; 
+        } 
       } 
     </style> 
   </head> 
@@ -386,27 +398,175 @@ export const getResetPasswordHtml = ({ email, token }) => {
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="x-apple-disable-message-reformatting" />
     <title>${appName} Password Reset</title>
-    <style>
-      /* Base reset */
-      html, body { margin: 0; padding: 0; }
-      body { background: #f6f7fb; color: #111; font-family: -apple-system, sans-serif; }
-      .container { width: 600px; max-width: 600px; background: #ffffff; border-radius: 12px; border: 1px solid #e9ecf3; margin: 40px auto; padding: 32px; }
-      .btn { display: inline-block; background: #111827; color: #ffffff !important; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; }
-      .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 24px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>Reset your password</h2>
-      <p>Hello ${email},</p>
-      <p>We received a request to reset your password. Click the button below to choose a new password.</p>
-      <p style="text-align: center; margin: 24px 0;">
-        <a class="btn" href="${resetUrl}" target="_blank">Reset Password</a>
-      </p>
-      <p>If you didn't request this, you can safely ignore this email.</p>
-      <div class="footer">© ${new Date().getFullYear()} ${appName}</div>
-    </div>
-  </body>
+   <style> 
+      /* Base reset */ 
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+      } 
+      body { 
+        background: #f6f7fb; 
+        color: #111; 
+        -webkit-text-size-adjust: 100%; 
+        -ms-text-size-adjust: 100%; 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif; 
+      } 
+      table { 
+        border-collapse: collapse; 
+      } 
+      img { 
+        border: 0; 
+        line-height: 100%; 
+        outline: none; 
+        text-decoration: none; 
+        display: block; 
+        max-width: 100%; 
+        height: auto; 
+      } 
+ 
+      /* Layout */ 
+      .wrapper { 
+        width: 100%; 
+        background: #f6f7fb; 
+      } 
+      .outer { 
+        width: 100%; 
+      } 
+      .container { 
+        width: 600px; 
+        max-width: 600px; 
+        background: #ffffff; 
+        border-radius: 12px; 
+        overflow: hidden; 
+        border: 1px solid #e9ecf3; 
+      } 
+      .p-24 { 
+        padding: 24px; 
+      } 
+      .p-32 { 
+        padding: 32px; 
+      } 
+      .header { 
+        background: #111827; 
+        padding: 18px 24px; 
+        text-align: center; 
+      } 
+      .brand { 
+        display: inline-block; 
+        color: #ffffff; 
+        font-weight: 700; 
+        font-size: 16px; 
+        letter-spacing: 0.3px; 
+        text-decoration: none; 
+      } 
+      .title { 
+        margin: 0 0 12px 0; 
+        font-size: 22px; 
+        line-height: 1.3; 
+        color: #111; 
+        font-weight: 700; 
+      } 
+      .text { 
+        margin: 0 0 16px 0; 
+        font-size: 15px; 
+        line-height: 1.6; 
+        color: #444; 
+      } 
+      .muted { 
+        color: #555; 
+        font-size: 14px; 
+        line-height: 1.6; 
+        margin: 0 0 12px 0; 
+      } 
+ 
+      /* Button */ 
+      .btn { 
+        display: inline-block; 
+        background: #111827; 
+        color: #ffffff !important; 
+        text-decoration: none; 
+        padding: 12px 18px; 
+        border-radius: 8px; 
+        font-weight: 600; 
+        font-size: 14px; 
+      } 
+ 
+      /* Footer */ 
+      .footer { 
+        text-align: center; 
+        color: #6b7280; 
+        font-size: 12px; 
+        line-height: 1.6; 
+        padding: 16px 24px 0 24px; 
+      } 
+      .link { 
+        color: #111827; 
+        text-decoration: underline; 
+        word-break: break-all; 
+      } 
+ 
+      /* Responsive */ 
+      @media only screen and (max-width: 600px) { 
+        .container { 
+          width: 100% !important; 
+        } 
+        .p-32 { 
+          padding: 24px !important; 
+        } 
+      } 
+    </style> 
+  </head> 
+  <body> 
+    <table role="presentation" class="wrapper" width="100%" border="0" cellspacing="0" cellpadding="0"> 
+      <tr> 
+        <td align="center" class="p-24"> 
+          <table role="presentation" class="container" border="0" cellspacing="0" cellpadding="0"> 
+            <!-- Header --> 
+            <tr> 
+              <td class="header"> 
+                <span class="brand">${appName}</span> 
+              </td> 
+            </tr> 
+ 
+            <!-- Body --> 
+            <tr> 
+              <td class="p-32"> 
+                <h1 class="title">Reset your password</h1>
+                <p class="text">Hello ${email},</p>
+                <p class="text"> 
+                  We received a request to reset your password. Click the button below to choose a new password. 
+                </p> 
+ 
+                <!-- Button --> 
+                <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 16px 0 
+20px 0;"> 
+                  <tr> 
+                    <td align="center"> 
+                      <a class="btn" href="${resetUrl}" target="_blank" rel="noopener">Reset Password</a> 
+                    </td> 
+                  </tr> 
+                </table> 
+ 
+                <p class="muted"> 
+                  If you didn't request this, you can safely ignore this email. 
+                </p> 
+              </td> 
+            </tr> 
+ 
+            <!-- Footer --> 
+            <tr> 
+              <td class="footer"> 
+                © ${new Date().getFullYear()} ${appName}. All rights reserved. 
+              </td> 
+            </tr> 
+            <tr> 
+              <td height="16" aria-hidden="true"></td> 
+            </tr> 
+          </table> 
+        </td> 
+      </tr> 
+    </table> 
+  </body> 
 </html>`;
   return html;
 };
