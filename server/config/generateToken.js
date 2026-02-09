@@ -3,7 +3,7 @@ import { redisClient } from "../index.js";
 import { clearCsrfToken, generateCsrfToken } from "./csrfMiddleware.js";
 export const generateToken = async (id, res) => {
   const accessToken = jwt.sign({ id }, process.env.ACCESS_SECRET_KEY, {
-    expiresIn: "2m",
+    expiresIn: "15m",
   });
 
   const refreshToken = jwt.sign({ id }, process.env.REFRESH_SECRET_KEY, {
@@ -19,7 +19,7 @@ export const generateToken = async (id, res) => {
     httpOnly: true,
     secure: true, // set to true if using https
     sameSite: "none",
-    maxAge: 2 * 60 * 1000, // 2 minutes
+    maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   res.cookie("refreshToken", refreshToken, {
@@ -50,7 +50,7 @@ export const verifyRefreshToken = async (refreshToken) => {
 
 export const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.ACCESS_SECRET_KEY, {
-    expiresIn: "1m",
+    expiresIn: "15m",
   });
 };
 
