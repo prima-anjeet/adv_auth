@@ -1,10 +1,12 @@
 import axiosInstance from "../lib/axios";
 import {
   AuthResponse,
+  ForgotPasswordRequest,
   LoginRequest,
   OtpVerifyRequest,
   ProfileResponse,
   RegisterRequest,
+  ResetPasswordRequest,
   VerifyEmailResponse,
 } from "../types";
 
@@ -12,6 +14,17 @@ export const login = async(data:LoginRequest):Promise<AuthResponse> => {
     const response = await axiosInstance.post<AuthResponse>("/api/v1/login", data);
     return response.data;
 }
+
+export const forgotPassword = async (data: ForgotPasswordRequest): Promise<{ message: string, success:boolean }> => {
+  const response = await axiosInstance.post<{ message: string, success:boolean }>("/api/v1/forgot-password", data);
+  return response.data;
+};
+
+export const resetPassword = async (data: ResetPasswordRequest): Promise<{ message: string, success:boolean }> => {
+  const response = await axiosInstance.post<{ message: string, success:boolean }>("/api/v1/reset-password", data);
+  return response.data;
+};
+
 export const otpVerify = async(data:OtpVerifyRequest):Promise<AuthResponse> => {
     const response = await axiosInstance.post<AuthResponse>("/api/v1/verify-otp", data);
     return response.data;

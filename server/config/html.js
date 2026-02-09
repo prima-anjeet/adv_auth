@@ -1,4 +1,4 @@
-export const getOtpHtml = ({ email, otp }) => { 
+export const getOtpHtml = ({ email, otp }) => {
   const html = `<!DOCTYPE html> 
 <html lang="en"> 
   <head> 
@@ -191,19 +191,19 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
     </table> 
   </body> 
 </html> 
-`; 
- 
-  return html; 
-}; 
- 
-export const getVerifyEmailHtml = ({ email, token }) => { 
-  const appName = process.env.APP_NAME || "Authentication App"; 
-  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173"; 
- 
-  const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/token/${encodeURIComponent( 
-    token 
-  )}`; 
- 
+`;
+
+  return html;
+};
+
+export const getVerifyEmailHtml = ({ email, token }) => {
+  const appName = process.env.APP_NAME || "Authentication App";
+  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/token/${encodeURIComponent(
+    token,
+  )}`;
+
   const html = `<!DOCTYPE html> 
 <html lang="en"> 
   <head> 
@@ -370,9 +370,43 @@ Emoji','Segoe UI Emoji','Segoe UI Symbol', sans-serif;
       </tr> 
     </table> 
   </body> 
-</html>`; 
- 
-  return html; 
-}; 
- 
- 
+</html>`;
+
+  return html;
+};
+
+export const getResetPasswordHtml = ({ email, token }) => {
+  const appName = "Auth App";
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>${appName} Password Reset</title>
+    <style>
+      /* Base reset */
+      html, body { margin: 0; padding: 0; }
+      body { background: #f6f7fb; color: #111; font-family: -apple-system, sans-serif; }
+      .container { width: 600px; max-width: 600px; background: #ffffff; border-radius: 12px; border: 1px solid #e9ecf3; margin: 40px auto; padding: 32px; }
+      .btn { display: inline-block; background: #111827; color: #ffffff !important; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; }
+      .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Reset your password</h2>
+      <p>Hello ${email},</p>
+      <p>We received a request to reset your password. Click the button below to choose a new password.</p>
+      <p style="text-align: center; margin: 24px 0;">
+        <a class="btn" href="${resetUrl}" target="_blank">Reset Password</a>
+      </p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+      <div class="footer">© ${new Date().getFullYear()} ${appName}</div>
+    </div>
+  </body>
+</html>`;
+  return html;
+};

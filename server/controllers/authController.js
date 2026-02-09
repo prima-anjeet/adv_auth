@@ -2,11 +2,20 @@ import TryCatch from "../middlewares/TryCatch.js";
 import bcrypt from "bcryptjs";
 import User from "../models/user.js";
 import sanitize from "mongo-sanitize";
-import { registerSchema, loginSchema } from "../config/zod.js";
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from "../config/zod.js";
 import { redisClient } from "../index.js";
 import crypto from "crypto";
 import sendEmail from "../config/sendMail.js";
-import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
+import {
+  getOtpHtml,
+  getVerifyEmailHtml,
+  getResetPasswordHtml,
+} from "../config/html.js";
 import {
   clearTokens,
   generateAccessToken,
@@ -239,12 +248,10 @@ const verifyOtp = TryCatch(async (req, res) => {
   const attempts = await redisClient.get(attemptsKey);
   if (attempts && parseInt(attempts) > 5) {
     await redisClient.del(`otp:${email}`); // Invalidate OTP
-    return res
-      .status(429)
-      .json({
-        success: false,
-        message: "Too many failed attempts. Please login again.",
-      });
+    return res.status(429).json({
+      success: false,
+      message: "Too many failed attempts. Please login again.",
+    });
   }
 
   const otpKey = `otp:${email}`;
@@ -341,6 +348,111 @@ const refreshCsrf = TryCatch(async (req, res) => {
     csrfToken: newCsrfToken,
   });
 });
+
+const forgotPassword = TryCatch(async (req, res) => {
+  const sanitizedBody = sanitize(req.body);
+  const parseResult = forgotPasswordSchema.safeParse(sanitizedBody);
+  if (!parseResult.success) {
+    const zodErrors = parseResult.error.flatten().fieldErrors;
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Validation failed",
+        errors: zodErrors,
+      });
+  }
+
+  const { email } = parseResult.data;
+
+  // Rate Limiting
+  const rateLimitKey = `forgot_password_limit:${req.ip}`;
+  const isRateLimited = await redisClient.get(rateLimitKey);
+  if (isRateLimited) {
+    return res
+      .status(429)
+      .json({
+        success: false,
+        message: "Too many requests. Please try again later.",
+      });
+  }
+  await redisClient.set(rateLimitKey, "true", { EX: 60 });
+
+  const user = await User.findOne({ email });
+  // Always return success to prevent Email Enumeration
+  if (!user) {
+    return res.json({
+      success: true,
+      message:
+        "If an account with that email exists, we have sent a password reset link.",
+    });
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Store Hashed Token
+  const resetKey = `reset_token:${hashedToken}`;
+  await redisClient.set(resetKey, user._id.toString(), { EX: 15 * 60 }); // 15 mins
+
+  const subject = "Reset Your Password";
+  const html = getResetPasswordHtml({ email, token: resetToken });
+  await sendEmail(email, subject, html);
+
+  return res.json({
+    success: true,
+    message:
+      "If an account with that email exists, we have sent a password reset link.",
+  });
+});
+
+const resetPassword = TryCatch(async (req, res) => {
+  const sanitizedBody = sanitize(req.body);
+  const parseResult = resetPasswordSchema.safeParse(sanitizedBody);
+
+  if (!parseResult.success) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Validation failed" });
+  }
+
+  const { token, password } = parseResult.data;
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  const resetKey = `reset_token:${hashedToken}`;
+
+  const userId = await redisClient.get(resetKey);
+  if (!userId) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Invalid or expired password reset token",
+      });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await User.findByIdAndUpdate(userId, { password: hashedPassword });
+
+  // Invalidate sessions and token
+  await redisClient.del(resetKey);
+  await clearTokens(userId, res);
+  await redisClient.del(`user:${userId}`);
+  await redisClient.del(`refresh_token:${userId}`);
+
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.clearCookie("csrfToken");
+
+  return res.json({
+    success: true,
+    message:
+      "Password reset successfully. Please login with your new password.",
+  });
+});
+
 export {
   registerUser,
   verifyUser,
@@ -350,4 +462,6 @@ export {
   refreshToken,
   logoutUser,
   refreshCsrf,
+  forgotPassword,
+  resetPassword,
 };

@@ -13,6 +13,16 @@ export interface RegisterRequest{
     email: string;
     password: string;
 }
+
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordRequest {
+    password: string;
+    token: string;
+}
+
 export interface User{
     id?:string;
     _id?: string;
