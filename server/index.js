@@ -15,7 +15,10 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      "https://adv-auth.netlify.app",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
   }),
