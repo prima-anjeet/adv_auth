@@ -6,7 +6,7 @@ import { useAuth } from "../context/auth-context";
 
 export default function RequireGuest({
   children,
-  redirectTo = "/dashboard",
+  redirectTo = "/",
   fallback,
 }: {
   children: React.ReactNode;

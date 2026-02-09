@@ -30,6 +30,11 @@ export const otpVerify = async(data:OtpVerifyRequest):Promise<AuthResponse> => {
     return response.data;
 }
 
+export const resendOtp = async (email: string): Promise<{ message: string; success: boolean }> => {
+  const response = await axiosInstance.post<{ message: string; success: boolean }>("/api/v1/resend-otp", { email });
+  return response.data;
+};
+
 export const register = async(data:RegisterRequest):Promise<AuthResponse> => {
     const response = await axiosInstance.post<AuthResponse>("/api/v1/register", data);
     return response.data;

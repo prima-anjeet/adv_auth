@@ -4,6 +4,7 @@ import {
   verifyUser,
   loginUser,
   verifyOtp,
+  resendOtp,
   myProfile,
   refreshToken,
   logoutUser,
@@ -23,6 +24,8 @@ router.get("/verify/:token", verifyUser);
 router.post("/login", loginUser);
 // otp verification route
 router.post("/verify-otp", verifyOtp);
+// resend otp route
+router.post("/resend-otp", resendOtp);
 // forgot password route
 router.post("/forgot-password", forgotPassword);
 // reset password route

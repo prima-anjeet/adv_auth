@@ -354,13 +354,11 @@ const forgotPassword = TryCatch(async (req, res) => {
   const parseResult = forgotPasswordSchema.safeParse(sanitizedBody);
   if (!parseResult.success) {
     const zodErrors = parseResult.error.flatten().fieldErrors;
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Validation failed",
-        errors: zodErrors,
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: zodErrors,
+    });
   }
 
   const { email } = parseResult.data;
@@ -369,12 +367,10 @@ const forgotPassword = TryCatch(async (req, res) => {
   const rateLimitKey = `forgot_password_limit:${req.ip}`;
   const isRateLimited = await redisClient.get(rateLimitKey);
   if (isRateLimited) {
-    return res
-      .status(429)
-      .json({
-        success: false,
-        message: "Too many requests. Please try again later.",
-      });
+    return res.status(429).json({
+      success: false,
+      message: "Too many requests. Please try again later.",
+    });
   }
   await redisClient.set(rateLimitKey, "true", { EX: 60 });
 
@@ -425,12 +421,10 @@ const resetPassword = TryCatch(async (req, res) => {
 
   const userId = await redisClient.get(resetKey);
   if (!userId) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Invalid or expired password reset token",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired password reset token",
+    });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -453,11 +447,57 @@ const resetPassword = TryCatch(async (req, res) => {
   });
 });
 
+const resendOtp = TryCatch(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required.",
+    });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: "User not found.",
+    });
+  }
+
+  const ratelimitKey = `resend_otp_limit:${req.ip}:${email}`;
+  if (await redisClient.get(ratelimitKey)) {
+    return res.status(429).json({
+      success: false,
+      message: "Please wait before resending OTP.",
+    });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpKey = `otp:${email}`;
+
+  await redisClient.set(otpKey, otp, { EX: 300 }); // Expires in 5 minutes
+
+  const subject = "Your New Login OTP";
+  const html = getOtpHtml({ email, otp });
+
+  await sendEmail(email, subject, html);
+
+  // Set rate limit for 60 seconds
+  await redisClient.set(ratelimitKey, "true", { EX: 60 });
+
+  return res.json({
+    success: true,
+    message: "OTP resent successfully.",
+  });
+});
+
 export {
   registerUser,
   verifyUser,
   loginUser,
   verifyOtp,
+  resendOtp,
   myProfile,
   refreshToken,
   logoutUser,
