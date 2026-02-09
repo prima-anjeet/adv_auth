@@ -13,7 +13,7 @@ import {
   generateToken,
   verifyRefreshToken,
 } from "../config/generateToken.js";
-import {refreshCsrfToken} from "../config/csrfMiddleware.js";
+import { refreshCsrfToken } from "../config/csrfMiddleware.js";
 
 const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
@@ -28,12 +28,24 @@ const registerUser = TryCatch(async (req, res) => {
     });
   }
   const { username, email, password } = parseResult.data;
+
+  // Rate limiting (IP based to prevent spam)
+  const ipRateLimitKey = `register_ip_limit:${req.ip}`;
+  if (redisClient && (await redisClient.get(ipRateLimitKey))) {
+    return res.status(429).json({
+      success: false,
+      message:
+        "Too many registration attempts from this IP. Please try again later.",
+    });
+  }
+
   const ratelimitKey = `register_rate_limit:${req.ip}:${email}`;
 
   if (redisClient && (await redisClient.get(ratelimitKey))) {
     return res.status(429).json({
       success: false,
-      message: "Too many registration attempts. Please try again later.",
+      message:
+        "Too many registration attempts for this email. Please try again later.",
     });
   }
 
@@ -68,6 +80,7 @@ const registerUser = TryCatch(async (req, res) => {
   // Set rate limit key with expiration of 60 seconds
   if (redisClient) {
     await redisClient.set(ratelimitKey, "true", { EX: 60 });
+    await redisClient.set(ipRateLimitKey, "true", { EX: 60 });
   }
 
   return res.json({
@@ -139,6 +152,25 @@ const loginUser = TryCatch(async (req, res) => {
 
   const { email, password } = parseResult.data;
 
+  // Security: Check brute force limits
+  const ipFailKey = `login_fail_ip:${req.ip}`;
+  const userFailKey = `login_fail_user:${email}`;
+
+  const [ipFails, userFails] = await Promise.all([
+    redisClient.get(ipFailKey),
+    redisClient.get(userFailKey),
+  ]);
+
+  if (
+    (ipFails && parseInt(ipFails) > 20) ||
+    (userFails && parseInt(userFails) > 5)
+  ) {
+    return res.status(429).json({
+      success: false,
+      message: "Too many failed login attempts. Try again later.",
+    });
+  }
+
   const ratelimitKey = `login_rate_limit:${req.ip}:${email}`;
 
   if (await redisClient.get(ratelimitKey)) {
@@ -148,20 +180,30 @@ const loginUser = TryCatch(async (req, res) => {
     });
   }
   const user = await User.findOne({ email });
-  if (!user) {
+
+  // Timing attack protection: Always compare hash
+  const dummyHash =
+    "$2b$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+  const isPasswordValid = await bcrypt.compare(
+    password,
+    user ? user.password : dummyHash,
+  );
+
+  if (!user || !isPasswordValid) {
+    // Record Failure
+    await redisClient.incr(ipFailKey);
+    await redisClient.expire(ipFailKey, 900); // 15m
+    await redisClient.incr(userFailKey);
+    await redisClient.expire(userFailKey, 900);
+
     return res.status(400).json({
       success: false,
       message: "Invalid email or password.",
     });
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid email or password.",
-    });
-  }
+  // Success - clear failure count for user
+  await redisClient.del(userFailKey);
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -191,6 +233,20 @@ const verifyOtp = TryCatch(async (req, res) => {
       message: "Email and OTP are required.",
     });
   }
+
+  // Rate Limiting for OTP
+  const attemptsKey = `verify_otp_attempts:${email}`;
+  const attempts = await redisClient.get(attemptsKey);
+  if (attempts && parseInt(attempts) > 5) {
+    await redisClient.del(`otp:${email}`); // Invalidate OTP
+    return res
+      .status(429)
+      .json({
+        success: false,
+        message: "Too many failed attempts. Please login again.",
+      });
+  }
+
   const otpKey = `otp:${email}`;
   const storedOtpString = await redisClient.get(otpKey);
 
@@ -205,12 +261,15 @@ const verifyOtp = TryCatch(async (req, res) => {
   const providedOtp = String(otp).trim();
 
   if (storedOtp !== providedOtp) {
+    await redisClient.incr(attemptsKey);
+    await redisClient.expire(attemptsKey, 600); // 10 minutes
     return res.status(400).json({
       success: false,
       message: "Invalid OTP.",
     });
   }
 
+  await redisClient.del(attemptsKey); // Clear attempts
   await redisClient.del(otpKey);
 
   const user = await User.findOne({ email });
