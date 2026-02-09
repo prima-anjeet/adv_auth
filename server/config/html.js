@@ -197,9 +197,7 @@ export const getOtpHtml = ({ email, otp }) => {
 
 export const getVerifyEmailHtml = ({ email, token }) => {
   const appName = "Auth App";
-  const baseUrl = process.env.FRONTEND_URL || "https://adv-auth.netlify.app";
-
-  const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/token/${encodeURIComponent(
+  const verifyUrl = `https://adv-auth.netlify.app/token/${encodeURIComponent(
     token,
   )}`;
 
@@ -389,7 +387,7 @@ export const getVerifyEmailHtml = ({ email, token }) => {
 
 export const getResetPasswordHtml = ({ email, token }) => {
   const appName = "Auth App";
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+  const resetUrl = `https://adv-auth.netlify.app/reset-password/${token}`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
