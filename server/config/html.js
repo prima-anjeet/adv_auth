@@ -197,7 +197,7 @@ export const getOtpHtml = ({ email, otp }) => {
 
 export const getVerifyEmailHtml = ({ email, token }) => {
   const appName = "Auth App";
-  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const baseUrl = process.env.FRONTEND_URL || "https://adv-auth.netlify.app";
 
   const verifyUrl = `${baseUrl.replace(/\/+$/, "")}/token/${encodeURIComponent(
     token,
