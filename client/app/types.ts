@@ -20,6 +20,11 @@ export interface User{
     email: string;
     role: string;
 }
+export interface VerifyEmailResponse {
+  success?: boolean;
+  message: string;
+  user?: User;
+}
 export interface AuthResponse {
   token: string;
   user: User;

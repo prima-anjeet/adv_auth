@@ -5,6 +5,7 @@ import {
   OtpVerifyRequest,
   ProfileResponse,
   RegisterRequest,
+  VerifyEmailResponse,
 } from "../types";
 
 export const login = async(data:LoginRequest):Promise<AuthResponse> => {
@@ -20,6 +21,12 @@ export const register = async(data:RegisterRequest):Promise<AuthResponse> => {
     const response = await axiosInstance.post<AuthResponse>("/api/v1/register", data);
     return response.data;
 }
+
+export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> => {
+  const safeToken = encodeURIComponent(token);
+  const response = await axiosInstance.get<VerifyEmailResponse>(`/api/v1/verify/${safeToken}`);
+  return response.data;
+};
 
 export const getMyProfile = async (): Promise<ProfileResponse> => {
   const response = await axiosInstance.get<ProfileResponse>("/api/v1/my-profile");

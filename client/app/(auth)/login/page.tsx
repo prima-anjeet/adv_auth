@@ -29,9 +29,9 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await login(result.data);
-      console.log(response);
       showToast.success(response.message);
       localStorage.setItem("email", formData.email);
+      setFormData({ email: "", password: "" });
       router.push("/verify-otp"); 
     } catch (error: any) {
       showToast.error(error.response?.data?.message || "Login failed");
