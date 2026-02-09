@@ -1,12 +1,28 @@
 "use client";
 import Link from "next/link";
 import RequireGuest from "@/app/components/require-guest";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { verifyEmail } from "@/app/services/auth.services";
 import { showToast } from "nextjs-toast-notify";
 
 export default function VerifyEmailPage() {
+  return (
+    <RequireGuest>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+           <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg text-center">
+              <p className="text-gray-400">Loading...</p>
+           </div>
+        </div>
+      }>
+        <VerifyEmailContent />
+      </Suspense>
+    </RequireGuest>
+  );
+}
+
+function VerifyEmailContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const paramToken =
@@ -60,7 +76,6 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <RequireGuest>
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
         <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg text-center">
           <h1 className="text-3xl font-bold">Verify Your Email</h1>
@@ -113,6 +128,5 @@ export default function VerifyEmailPage() {
           </div>
         </div>
       </div>
-    </RequireGuest>
   );
 }
