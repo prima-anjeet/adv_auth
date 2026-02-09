@@ -8,6 +8,8 @@ import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
 dotenv.config();
 
+app.set("trust proxy", 1); // Trust first proxy (critical for rate limiting behind load balancers)
+
 app.use(express.json());
 app.use(cookieParser());
 
