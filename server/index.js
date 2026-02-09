@@ -5,18 +5,23 @@ import { createClient } from "redis";
 import cookieParser from "cookie-parser";
 const app = express();
 import authRoutes from "./routes/authRoutes.js";
+import cors from "cors";
 dotenv.config();
 
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  }),
+);
 app.use("/api/v1", authRoutes);
-
 const port = process.env.PORT || 8000;
 
 connectDB();
-
-// Connect to Redis if REDIS_URL is provided
 const redisUrl = process.env.REDIS_URL;
 let redisClient;
 

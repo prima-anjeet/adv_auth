@@ -13,6 +13,8 @@ import {
   generateToken,
   verifyRefreshToken,
 } from "../config/generateToken.js";
+import {refreshCsrfToken} from "../config/csrfMiddleware.js";
+
 const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
   // Validate input using Zod schema
@@ -263,10 +265,21 @@ const logoutUser = TryCatch(async (req, res) => {
   await clearTokens(userId, res);
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
+  res.clearCookie("csrfToken");
   await redisClient.del(`user:${userId}`);
   return res.json({
     success: true,
     message: "Logged out successfully.",
+  });
+});
+
+const refreshCsrf = TryCatch(async (req, res) => {
+  const userId = req.user._id;
+  const newCsrfToken = await refreshCsrfToken(userId, res);
+  return res.json({
+    success: true,
+    message: "CSRF token refreshed successfully.",
+    csrfToken: newCsrfToken,
   });
 });
 export {
@@ -277,4 +290,5 @@ export {
   myProfile,
   refreshToken,
   logoutUser,
+  refreshCsrf,
 };
