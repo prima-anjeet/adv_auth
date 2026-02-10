@@ -316,8 +316,9 @@ const refreshToken = TryCatch(async (req, res) => {
   // Set new access token cookie so isAuth can read it
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    sameSite: "strict",
-    maxAge: 2 * 60 * 1000, // 2 minutes
+    secure: true,
+    sameSite: "none",
+    maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   return res.status(200).json({
@@ -329,9 +330,21 @@ const refreshToken = TryCatch(async (req, res) => {
 const logoutUser = TryCatch(async (req, res) => {
   const userId = req.user._id;
   await clearTokens(userId, res);
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  res.clearCookie("csrfToken");
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.clearCookie("csrfToken", {
+    httpOnly: false,
+    secure: true,
+    sameSite: "none",
+  });
   await redisClient.del(`user:${userId}`);
   return res.json({
     success: true,
@@ -436,9 +449,21 @@ const resetPassword = TryCatch(async (req, res) => {
   await redisClient.del(`user:${userId}`);
   await redisClient.del(`refresh_token:${userId}`);
 
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  res.clearCookie("csrfToken");
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.clearCookie("csrfToken", {
+    httpOnly: false,
+    secure: true,
+    sameSite: "none",
+  });
 
   return res.json({
     success: true,

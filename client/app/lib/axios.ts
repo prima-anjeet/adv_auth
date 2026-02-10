@@ -61,6 +61,9 @@ axiosInstance.interceptors.response.use(
     const isCsrfRefreshCall =
       typeof originalRequest?.url === "string" &&
       originalRequest.url.includes("/refresh-csrf");
+    const isProfileCall =
+      typeof originalRequest?.url === "string" &&
+      originalRequest.url.includes("/my-profile");
 
     const isCsrfError =
       status === 403 &&
@@ -83,6 +86,13 @@ axiosInstance.interceptors.response.use(
     }
 
     if (!isAuthError || isRefreshCall || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Don't attempt token refresh if there are no cookies at all (guest user)
+    // This prevents unnecessary refresh attempts on initial page load
+    const hasRefreshToken = typeof document !== "undefined" && document.cookie.includes("refreshToken");
+    if (!hasRefreshToken) {
       return Promise.reject(error);
     }
 

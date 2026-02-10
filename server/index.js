@@ -1,55 +1,78 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
 import connectDB from "./config/db.js";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
-const app = express();
-import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
-dotenv.config();
+
+const app = express();
 
 app.set("trust proxy", 1); // Trust first proxy (critical for rate limiting behind load balancers)
 
 app.use(express.json());
 app.use(cookieParser());
 
+// CORS: normalize origins to handle trailing slash mismatches
+const allowedOrigin = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
 app.use(
   cors({
-    origin:process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (origin.replace(/\/+$/, "") === allowedOrigin) {
+        return callback(null, true);
+      }
+      console.warn(`CORS blocked: ${origin} !== ${allowedOrigin}`);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
   }),
 );
-app.use("/api/v1", authRoutes);
-const port = process.env.PORT || 8000;
 
-connectDB();
+// Redis setup
 const redisUrl = process.env.REDIS_URL;
 let redisClient;
 
 if (!redisUrl) {
-  console.log("REDIS_URL not provided");
+  console.error(
+    "REDIS_URL not provided. Server cannot function without Redis.",
+  );
+  process.exit(1);
 } else {
   redisClient = createClient({
     url: redisUrl,
   });
-
-  redisClient
-    .connect()
-    .then(() => {
-      console.log("Connected to Redis");
-    })
-    .catch((err) => {
-      console.log("Redis connection error:", err);
-    });
+  redisClient.on("error", (err) => console.error("Redis Client Error:", err));
 }
 
 export { redisClient };
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+// Import routes AFTER redisClient is declared (circular dependency safety)
+import authRoutes from "./routes/authRoutes.js";
+app.use("/api/v1", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
+
+// Start server only after all connections are ready
+const port = process.env.PORT || 8000;
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    await redisClient.connect();
+    console.log("Connected to Redis");
+
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
+};
+
+startServer();

@@ -1,10 +1,13 @@
 "use client";
 import Link from "next/link";
 import RequireGuest from "@/app/components/require-guest";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { verifyEmail } from "@/app/services/auth.services";
 import { showToast } from "nextjs-toast-notify";
+
+// Module-level cache to prevent React Strict Mode double-execution
+const verifyCache = new Map<string, Promise<any>>();
 
 export default function VerifyEmailPage() {
   return (
@@ -50,7 +53,14 @@ function VerifyEmailContent() {
     setStatus("loading");
     setMessage("");
 
-    verifyEmail(token)
+    // Re-use existing promise if React Strict Mode re-runs this effect
+    let promise = verifyCache.get(token);
+    if (!promise) {
+      promise = verifyEmail(token);
+      verifyCache.set(token, promise);
+    }
+
+    promise
       .then((response) => {
         if (!isActive) return;
         const successMessage =
